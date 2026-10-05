@@ -47,5 +47,5 @@ The manual PDF is not in this repo (it's copyrighted). Get it from https://www.l
 - `build.sh`: runs both
 - `viewer/`: the web viewer and its no-cache server
 - `docs/manual-notes.md`: notes taken while reading the manual
-- `MEMORY.md`: decision log
-- `ERRORS.md`: approaches that failed and what worked instead
+- `MEMORY.md`: decision log (local only; the global gitignore excludes it)
+- `ERRORS.md`: approaches that failed and what worked instead (local only)
