@@ -6,3 +6,13 @@ viewer/bear_basin.glb
 __pycache__/
 # the Little Tikes manual is copyrighted; keep local copies out of the repo
 *.pdf
+
+# build diagnostics and isolated staging
+validation.json
+validation.failed.json
+artifact-verification*.json
+.bear-basin-build.*/
+.ruff_cache/
+
+# Local checkpoint copies of generated model artifacts
+.checkpoints/

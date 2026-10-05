@@ -1,0 +1,51 @@
+import * as THREE from '../viewer/vendor/three.mjs';
+import {GLTFLoader} from '../viewer/vendor/addons/loaders/GLTFLoader.js';
+import fs from 'node:fs';
+import {gzipSync} from 'node:zlib';
+import {createHash} from 'node:crypto';
+import {trajectoryKey} from '../viewer/baked-simulation.mjs';
+import assert from 'node:assert/strict';
+import {PhysicsView} from '../viewer/physics-view.mjs';
+import {partPath,samplePath} from '../viewer/disassembly.mjs';
+import {readPartMetadata} from '../viewer/model-state.mjs';
+
+const data=fs.readFileSync(new URL('../viewer/bear_basin.glb',import.meta.url));
+const root=(await new GLTFLoader().parseAsync(data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength),'')).scene;
+root.updateWorldMatrix(true,true);
+const pieces=[];
+root.traverse(object=> {
+  if(!object.isMesh)return;
+  Object.assign(object.userData,readPartMetadata(object));
+  const center=new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3());
+  const pose=samplePath(partPath(center.toArray(),object.userData.grp,object.userData.part),1);
+  const position=object.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(...pose.offset));
+  pieces.push({object,geometry:object.geometry});
+  object.position.copy(object.parent.worldToLocal(position));
+  object.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(...pose.turn)));
+});
+root.updateWorldMatrix(true,true);
+const fall=new PhysicsView(pieces);
+const descriptors=fall.entries.map(e=>e.descriptor);
+const key=trajectoryKey(descriptors);
+const frames=[];
+const flatten=poses=>Float32Array.from(poses.flatMap(p=>p.points?p.points.flat():[...p.position,...p.quaternion]));
+frames.push(flatten(fall.simulation.step(0)));
+for(let tick=0;tick<1800 && fall.simulation.active;tick++)frames.push(flatten(fall.simulation.step(1/60)));
+assert.equal(fall.simulation.active,false,'never cache an unsettled pile');
+const header={version:1,key,fps:60,frames:frames.length,stride:frames[0].length,nativeSleep:true,engine:'Rapier 0.21.0',encoding:'delta-i32',scale:10000};
+header.sources=Object.fromEntries(['fall-physics.mjs','disassembly.mjs'].map(file=>[
+  file,createHash('sha256').update(fs.readFileSync(new URL('../viewer/'+file,import.meta.url))).digest('hex')]));
+const encoded=Buffer.from(JSON.stringify(header));
+const offset=4+Math.ceil(encoded.length/4)*4;
+const buffer=Buffer.alloc(offset+frames.length*header.stride*4);
+buffer.writeUInt32LE(encoded.length,0);encoded.copy(buffer,4);
+const previous=new Int32Array(header.stride);
+frames.forEach((frame,i)=>frame.forEach((value,j)=> {
+  const quantized=Math.round(value*header.scale);
+  buffer.writeInt32LE(quantized-previous[j],offset+(i*header.stride+j)*4);
+  previous[j]=quantized;
+}));
+const compressed=gzipSync(buffer,{level:9});
+fs.writeFileSync(new URL('../viewer/fall-trajectory.bin.gz',import.meta.url),compressed);
+console.log(JSON.stringify({...header,compressedBytes:compressed.length,simulationSeconds:fall.simulation.elapsed}));
+fall.reset();

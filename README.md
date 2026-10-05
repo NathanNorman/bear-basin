@@ -1,51 +1,77 @@
 # Bear Basin model
 
-A 3D model of the Little Tikes Real Wood Adventures Bear Basin playset (item 651281), built in Blender from the manufacturer's 193-step assembly manual. It is meant for physics simulation (swing dynamics, tip-over and anchoring), so it models every structural part, brace, bolt, screw, nut and washer at the joint the manual puts it in.
+A Blender assembly visualization of the Little Tikes Real Wood Adventures Bear Basin playset (651281), based on its assembly manual. Dimensions that are not supplied by the manual remain estimates. The Blender source is an assembly model; the browser viewer includes a visual physics simulation.
+
+The October 5, 2026 review and completed rebuild are recorded in [docs/review.md](docs/review.md). The published model passes 849 fastener checks, 122 nut/washer checks, and an independent reopen/export comparison of all 1,275 components. See `validation.json` and `artifact-verification.json` for the generated receipts and limitations.
 
 ## Build
 
-Requires Blender 5 on the PATH.
+Requires Blender 5 with its bundled Python and NumPy. Run from a terminal with normal graphics access. On this Mac, launching Blender inside the restricted agent sandbox crashed in Metal initialization before Python ran. Background builds outside that sandbox completed successfully without changing the open Blender GUI.
 
 ```sh
 ./build.sh
+# Optional executable override:
+BLENDER=/path/to/blender ./build.sh
 ```
 
-This runs `build.py`, which builds the model and writes `bear_basin.blend` and `bear_basin.json`, then runs `export_glb.py`, which writes `viewer/bear_basin.glb` for the viewer. All three are generated and gitignored.
+The pipeline runs three isolated background Blender processes with factory startup: generate/validate, export, then independently reopen and compare saved artifacts. It stages all outputs and publishes them only after every phase succeeds. A failed build preserves the previous model and viewer export. Full diagnostics are shown; failure reports are retained as `validation.failed.json` and `artifact-verification.failed.json` when available.
 
-`build.py` also checks the model on every run and prints the results:
+Generated, gitignored outputs:
 
-- every joint's two parts touch
-- every fastener's head is in the part it holds and its tip is in the part behind it
-- every joint references parts that exist
-- nut and washer counts against the manual's hardware page
-- total mass against the retailer's listed 574 lb
+- `bear_basin.blend`: modeled assembly, without a physics setup.
+- `bear_basin.json`: schema v2 manifest with members, component transforms/masses, joints and hardware.
+- `validation.json`: record checks, actual-mesh fastener/contact checks and inventory discrepancies.
+- `viewer/bear_basin.glb`: browser export including converted ropes and other curves.
+- `artifact-verification.json`: saved scene/export integrity checks and SHA-256 hashes. Input paths identify the temporary staging directory used for verification; hashes identify the published files.
+
+`build.sh` enables strict mesh validation. Mesh failures stop publication. For investigation, `build.py` also accepts `--output-dir PATH` without `--strict-mesh`; that diagnostic mode can save a model marked `needs_review`. A successful geometry check does not verify estimated dimensions, material properties, loading, or structural safety.
 
 ## View
 
 ```sh
-/Users/nathan.norman/.pyenv/versions/3.12.11/bin/python3 viewer/serve.py 8472
+python3 viewer/serve.py 8472
 ```
 
-Then open http://localhost:8472. Drag to rotate, right-drag to pan, scroll to zoom. Click a part to see its manual code, add a note about it, and copy all notes. The checkboxes hide groups such as the roof or the fasteners.
+Open [the local viewer](http://127.0.0.1:8472). Drag to rotate, right-drag or Shift-drag to pan, and scroll to zoom. Click a part for its manual code. **Y-bracket close-up** frames the corrected sleeve-to-cup connections. Notes persist in the same browser and origin; use **Copy all notes** to export them. Group checkboxes hide components. The viewer loads pinned Three.js modules from unpkg and needs internet access for those modules.
 
-## Coordinates
+## Tests without Blender
 
-Metres. x points away from the swings (the swings are at -x), y+ is the back of the tower (the climbing net and the upper opening), z is up, and the origin is on the ground at the tower's centre. Tower legs use the manual's codes: C02, C04A and C01A on the back; C01B, C04B and C03 on the front; C05 on the west face; C06 on the east face.
+These commands never launch the installed Blender executable:
 
-## Sources and estimates
+```sh
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+node --test viewer/tests/*.test.mjs
+```
 
-- **From the manual:** the layout, part codes, joint and fastener assignments per step, overall heights (from the p.4 vertical-height diagram) and hardware types.
-- **From the retailer listing:** total mass (574 lb), footprint (155 in deep) and the beam's top-to-ground height.
-- **Estimates:** lumber cross-sections, wall thicknesses of the steel brackets, the Y-bracket's setback and socket drop, and fastener shear capacities (±50%). These are marked `E` in `build.py`. The model weighs about 296 kg against the listed 260 kg, so the section estimates run about 14% heavy.
+The Python tests cover manual-derived joint schedules, hardware stacks, notches, record validation and failure-preserving build/export behavior using a fake Blender executable. Browser behavior and generated geometry require separate verification.
 
-The manual PDF is not in this repo (it's copyrighted). Get it from https://www.littletikes.com/pages/instruction-manuals.
+## Layout
 
-## Files
+- `build.py`: CLI, scene lifecycle, validation and output orchestration.
+- `bear_basin/geometry.py`: scene geometry, scoped to one build.
+- `bear_basin/joints.py`: manual assembly schedule.
+- `bear_basin/hardware.py`: hardware catalog, nut assignments and estimated masses.
+- `bear_basin/placement.py`: explicit attachment locations and shared contact solver.
+- `bear_basin/mesh_placement.py`: bounded surface refinement of failed contact proposals.
+- `bear_basin/assembly.py`: hardware meshes, stable identities and placement records.
+- `bear_basin/shapes.py`: pure polygon calculations.
+- `bear_basin/validation.py`: independent record and actual-mesh checks.
+- `bear_basin/report.py`: versioned manifest and scene mass accounting.
+- `export_glb.py`: background-only glTF export with staged replacement.
+- `tests/verify_artifacts.py`: fresh-process saved scene, metadata and exported world-bounds checks.
+- `viewer/`: browser presentation, selection, notes, and local server.
+- `docs/manual-notes.md`: earlier manual-reading notes; corrections are in the review.
 
-- `build.py`: the model, joints, fastener placement and checks
-- `export_glb.py`: Blender to glTF for the viewer
-- `build.sh`: runs both
-- `viewer/`: the web viewer and its no-cache server
-- `docs/manual-notes.md`: notes taken while reading the manual
-- `MEMORY.md`: decision log (local only; the global gitignore excludes it)
-- `ERRORS.md`: approaches that failed and what worked instead (local only)
+Coordinates are metres: x points away from the swings, y+ is the tower back (climbing net/opening), z is up, and the origin is on the ground at the tower centre. The glTF export converts to y-up; the viewer's `viewerState.look(camera, target)` accepts Blender coordinates.
+
+The supplied PDF is intentionally not included in Git. The manufacturer provides manuals through its [instruction-manual page](https://www.littletikes.com/pages/instruction-manuals).
+
+The bottom **FIELD / ASSEMBLY** slider scrubs a reversible exploded animation. Hardware releases first, then roof and structure separate; **Disassemble** and **Reassemble** play the transition. Cyan points accent suspended hardware. **Show inspector** restores selection, visibility and note controls. This is a visual exploration, not a prescribed construction sequence or a collision simulation; the source model and GLB remain unchanged.
+
+At full separation, a short suspended pause is followed automatically by a gravity release. The locally vendored Apache-2.0-licensed Rapier 0.21.0 WebAssembly engine simulates gravity at 9.81 m/s², rigid contact, friction, low restitution and native sleeping bodies. Timber and the slide use hulls derived from their visible mesh instead of oversized box envelopes. The ground is a deep solid slab. CCD and a fixed 120 Hz timestep resolve fast impacts; bodies are never teleported back onto the floor.
+
+Ropes and the tarp use Rapier's native soft bodies. Rope edges resist tension; the cloth has damped tension constraints and deforming surface contacts. Soft bodies have lower contact dominance: they collide with and drape over timber, but do not hold heavy planks up or push them around. This is an explicit visual approximation. Other limitations include estimated masses, simplified steel/plastic colliders, omitted fastener-to-fastener and rope-to-rope contacts, and uncalibrated fabric stiffness and no bending resistance. The fall is a visual effect, not an engineering prediction.
+
+Normal playback uses a compressed trajectory baked from the verified Rapier simulation, interpolated at render speed. The cache matches the model geometry, release transforms and physics source hashes; a mismatch uses the live worker solver. Position samples have 0.1 mm resolution. Reassembling or moving the slider terminates that worker and restores the original meshes. The recorded trajectory ends only after the physics engine puts every body to sleep; there is no arbitrary timed freeze. Regenerate it after model or physics changes with `node --experimental-loader ./scripts/three-loader.mjs ./scripts/bake-fall.mjs`. Verify playback with the matching `scripts/verify-playback.mjs` command. Hardware remains instanced to reduce draw calls.
+
+Verification: run `node --test viewer/tests/*.test.mjs`, then `node --experimental-loader ./scripts/three-loader.mjs ./scripts/verify-fall.mjs`. The second command loads the actual GLB, runs twenty simulated seconds, checks native sleep, escaped parts, finite poses, late motion and mesh restoration. Research and receipts are in [docs/physics-research.md](docs/physics-research.md).

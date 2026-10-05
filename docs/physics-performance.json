@@ -1,0 +1,14 @@
+{
+  "cached": true,
+  "frames": 279,
+  "duration": 4.633333333333334,
+  "cpuMsMean": 0.5276817633333337,
+  "cpuMsP95": 0.7012500000000159,
+  "nativeSleep": true,
+  "restingUnchanged": true,
+  "geometryRestored": true,
+  "engine": "Rapier 0.21.0 baked trajectory",
+  "compressedBytes": 882969,
+  "positionResolutionMeters": 0.0001,
+  "liveRenderFps": 120.1
+}

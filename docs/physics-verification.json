@@ -1,0 +1,92 @@
+{
+  "verified_at": "2026-10-05T19:19:38.680951+00:00",
+  "engine": "Rapier 0.21.0",
+  "viewer_tests_passed": 22,
+  "full_model": {
+    "meshes": 1275,
+    "flexibleParts": 41,
+    "samples": [
+      {
+        "seconds": 5,
+        "awake": 0
+      },
+      {
+        "seconds": 10,
+        "awake": 0
+      },
+      {
+        "seconds": 15,
+        "awake": 0
+      },
+      {
+        "seconds": 20,
+        "awake": 0
+      }
+    ],
+    "nativeSleep": true,
+    "lateDisplacement": 0,
+    "minCenterHeight": -0.00017333030700683594,
+    "tallNarrowComponents": 0,
+    "finite": true,
+    "geometryRestored": true
+  },
+  "browser_input_replay": {
+    "samples": [
+      {
+        "seconds": 5,
+        "awake": []
+      },
+      {
+        "seconds": 10,
+        "awake": []
+      },
+      {
+        "seconds": 15,
+        "awake": []
+      },
+      {
+        "seconds": 20,
+        "awake": []
+      }
+    ],
+    "nativeSleep": true,
+    "lateMotion": 0
+  },
+  "scope": "Visual physics: estimated masses and drag, simplified steel/plastic colliders, one-way soft-to-rigid contact, no fabric bending stiffness",
+  "source_sha256": {
+    "viewer/fall-physics.mjs": "eb875a85281130030082d431566c1276f13c5717a8eef472abe89aa562c3735f",
+    "viewer/physics-view.mjs": "c862c785c1ca4437c2913bb6f57f328fee5f00c9b1c15719525d9f73da34926d",
+    "viewer/physics-worker.mjs": "57d98b24172e63278c398a6815cc789ae3eb5156168657cb21baf1280171726a",
+    "viewer/worker-simulation.mjs": "9cebef849fb6aab10ba56982759d0304a405ef79635d36f1152b65eb99ef9df9",
+    "viewer/viewer.js": "8edd5ce299c5f6aa6e7a2a81ee56cf0f69242357f57825a3f52a5834e68c4775",
+    "viewer/index.html": "0d8960ac75bcc492ec92d2c3d0fb55cac1ee5b15e8803c735caf710c648a9db9",
+    "viewer/vendor/rapier.mjs": "02dc6a4e2fffc013bab08fbb44fa68f501d8303615e9afe4c7d89ad4eedda0d0",
+    "viewer/bear_basin.glb": "7fb3b90c7f1b164b2087133aa725ccdfeebead0ed2eda663b51b8372ebcfd39b",
+    "viewer/baked-simulation.mjs": "edd0b2419a9e719bdcab12c80a7b543d0c3b5b0cb52b1cefa62b005adb88860f",
+    "viewer/fall-trajectory.bin.gz": "323f6b195f1b014648faedb9d4cd0145286b6fdd371c8da93e869c9444ddc2e1",
+    "scripts/bake-fall.mjs": "2971d1d66ce5f449eb16b55dc1af9f995bbfa2d36a58554772c4ff2747bda4c0"
+  },
+  "live_browser": {
+    "url": "http://127.0.0.1:8473/",
+    "mode": "cached",
+    "state": "SETTLED",
+    "physics_seconds": 4.63,
+    "render_fps": 120.0,
+    "last_pose_update_ms": 0.8,
+    "preparation_ms": 21.5
+  },
+  "cached_playback": {
+    "cached": true,
+    "frames": 279,
+    "duration": 4.633333333333334,
+    "cpuMsMean": 0.5276817633333337,
+    "cpuMsP95": 0.7012500000000159,
+    "nativeSleep": true,
+    "restingUnchanged": true,
+    "geometryRestored": true,
+    "engine": "Rapier 0.21.0 baked trajectory",
+    "compressedBytes": 882969,
+    "positionResolutionMeters": 0.0001,
+    "liveRenderFps": 120.1
+  }
+}

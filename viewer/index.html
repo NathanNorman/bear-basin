@@ -1,118 +1,47 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Bear Basin viewer</title>
-<style>
-  html, body { margin: 0; height: 100%; overflow: hidden; font: 13px -apple-system, system-ui, sans-serif; background: #c9ced6; }
-  #panel { position: absolute; top: 10px; left: 10px; width: 250px; max-height: calc(100% - 20px); overflow: auto;
-           background: rgba(255,255,255,.93); border-radius: 8px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
-  h3 { margin: 4px 0 6px; font-size: 13px; }
-  label { display: block; margin: 2px 0; cursor: pointer; }
-  #sel { min-height: 54px; padding: 6px; background: #f2f2f2; border-radius: 4px; margin: 4px 0 8px; white-space: pre-wrap; }
-  textarea { width: 100%; box-sizing: border-box; height: 48px; }
-  button { margin: 4px 4px 0 0; }
-  #notes div { border-top: 1px solid #ddd; padding: 4px 0; }
-  #help { color: #555; margin-bottom: 6px; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bear Basin viewer</title>
+  <link rel="stylesheet" href="viewer.css">
 </head>
 <body>
-<div id="panel">
-  <div id="help">Drag: rotate · Right-drag or Shift-drag: pan · Scroll: zoom · Click a part to select it</div>
-  <h3>Selected</h3>
-  <div id="sel">nothing</div>
-  <textarea id="note" placeholder="What's wrong with this part?"></textarea>
-  <button id="add">Add note</button><button id="copy">Copy all notes</button>
-  <div id="notes"></div>
-  <h3>Show</h3>
-  <div id="groups"></div>
-  <button id="reset">Reset view</button>
-</div>
-<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(devicePixelRatio); renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
-const scene = new THREE.Scene(); scene.background = new THREE.Color(0xc9ced6);
-const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.02, 200);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; controls.screenSpacePanning = true;
-controls.zoomSpeed = 5; controls.zoomToCursor = true;   // ~10x the default per scroll, and zoom toward the point under the cursor
-controls.panSpeed = 1.5;
-scene.add(new THREE.HemisphereLight(0xffffff, 0x665544, 1.6));
-const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(6, 10, 4); scene.add(sun);
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.MeshLambertMaterial({ color: 0x5a4d38 }));
-ground.rotation.x = -Math.PI / 2; ground.position.y = -0.001; scene.add(ground);
-scene.add(new THREE.GridHelper(30, 30, 0x777777, 0x6a5e48));
-// axis hint: x red = away from swings, blue = toward the back (y+ in Blender is -z here)
-const home = () => { camera.position.set(1.5, 3.2, -9.5); controls.target.set(-0.5, 1.5, 0.3); controls.update(); };
-home();
-
-const state = window.viewerState = { selected: null, notes: [],
-  // look([x,y,z] camera, [x,y,z] target) in Blender coordinates (z up), for jumping to a spot
-  look: (c, t) => { camera.position.set(c[0], c[2], -c[1]); controls.target.set(t[0], t[2], -t[1]); controls.update(); } };
-const groups = {}; const pickables = [];
-let highlight = null;
-new GLTFLoader().load('bear_basin.glb?t=' + Date.now(), (g) => {   // cache-bust: always load the latest export
-  g.scene.traverse((o) => {
-    if (!o.isMesh) return;
-    const src = o.userData.group ? o : o.parent;
-    const grp = (src.userData && src.userData.group) || (o.parent && o.parent.userData.group) || 'Other';
-    o.userData.part = (o.parent && o.parent.type === 'Object3D' && !o.name.match(/^[A-Z]/) ? o.parent.name : o.name);
-    o.userData.code = o.userData.code || (o.parent && o.parent.userData.code) || '';
-    o.userData.grp = grp;
-    (groups[grp] = groups[grp] || []).push(o); pickables.push(o);
-    o.material = o.material.clone();
-  });
-  scene.add(g.scene);
-  const gdiv = document.getElementById('groups');
-  Object.keys(groups).sort().forEach((k) => {
-    const l = document.createElement('label');
-    l.innerHTML = `<input type="checkbox" checked> ${k.replace(/_/g, ' ')} (${groups[k].length})`;
-    l.querySelector('input').onchange = (e) => groups[k].forEach((o) => (o.visible = e.target.checked));
-    gdiv.appendChild(l);
-  });
-});
-
-const ray = new THREE.Raycaster(); const mouse = new THREE.Vector2(); let down = null;
-renderer.domElement.addEventListener('pointerdown', (e) => (down = [e.clientX, e.clientY]));
-renderer.domElement.addEventListener('pointerup', (e) => {
-  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;   // ignore drags
-  mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
-  ray.setFromCamera(mouse, camera);
-  const hit = ray.intersectObjects(pickables.filter((o) => o.visible), false)[0];
-  select(hit ? hit.object : null, hit ? hit.point : null);
-});
-function select(o, p) {
-  if (highlight) highlight.material.emissive.setHex(0x000000);
-  highlight = o;
-  if (!o) { state.selected = null; document.getElementById('sel').textContent = 'nothing'; return; }
-  o.material.emissive.setHex(0xff3300);
-  const bz = p ? [p.x, -p.z, p.y].map((v) => v.toFixed(2)) : [];
-  state.selected = { name: o.userData.part || o.name, code: o.userData.code, group: o.userData.grp, point_xyz_blender: bz };
-  document.getElementById('sel').textContent =
-    `${state.selected.name}\npart code: ${state.selected.code || '-'}\ngroup: ${state.selected.group}\nclicked at (x,y,z): ${bz.join(', ')}`;
-}
-document.getElementById('add').onclick = () => {
-  const t = document.getElementById('note').value.trim();
-  if (!t && !state.selected) return;
-  const n = { part: state.selected ? state.selected.name : '(none)', code: state.selected ? state.selected.code : '',
-              at: state.selected ? state.selected.point_xyz_blender.join(', ') : '', note: t };
-  state.notes.push(n); document.getElementById('note').value = '';
-  const d = document.createElement('div'); d.textContent = `${n.part} [${n.code}] ${n.note}`;
-  document.getElementById('notes').appendChild(d);
-  localStorage.setItem('bb_notes', JSON.stringify(state.notes));
-};
-document.getElementById('copy').onclick = () => navigator.clipboard.writeText(
-  state.notes.map((n) => `- ${n.part} [${n.code}] at (${n.at}): ${n.note}`).join('\n'));
-document.getElementById('reset').onclick = home;
-addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
-(function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
-</script>
+  <main id="viewport" aria-label="Interactive Bear Basin model"></main>
+  <section id="disassembly" aria-label="Disassembly animation">
+    <div class="disassembly-title"><span>FIELD / ASSEMBLY</span><output id="explode-value" for="explode">ASSEMBLED · 0%</output></div>
+    <label for="explode">Drag to disassemble / reassemble</label>
+    <div class="release-hint">At full separation, gravity takes over.</div>
+    <input id="explode" type="range" min="0" max="1000" value="0" disabled>
+    <div class="disassembly-actions"><button id="assemble" type="button" disabled>Reassemble</button><button id="disassemble" type="button" disabled>Disassemble</button><button id="inspect" type="button">Hide inspector</button></div>
+  </section>
+  <aside id="panel" aria-label="Model controls and notes">
+    <div id="help">Drag: rotate · Right-drag or Shift-drag: pan · Scroll: zoom · Click a part to select it</div>
+    <div id="model-status" role="status" aria-live="polite">Loading model…</div>
+    <button id="retry" type="button" hidden>Retry loading</button>
+    <h3>Selected</h3>
+    <div id="sel" aria-live="polite">nothing</div>
+    <label class="visually-hidden" for="note">Note about the selected part</label>
+    <textarea id="note" placeholder="What's wrong with this part?"></textarea>
+    <button id="add" type="button">Add note</button><button id="copy" type="button" disabled>Copy all notes</button>
+    <div id="notes-status" role="status" aria-live="polite"></div>
+    <div id="copy-fallback" hidden>
+      <label for="notes-export">Select and copy these notes:</label>
+      <textarea id="notes-export" readonly></textarea>
+    </div>
+    <div id="notes"></div>
+    <h3>Show</h3>
+    <div id="groups"></div>
+    <button id="reset" type="button">Reset view</button>
+    <button id="bracket-view" type="button">Y-bracket close-up</button>
+  </aside>
+  <noscript>This viewer requires JavaScript.</noscript>
+  <script type="importmap">{
+    "imports": {
+      "three": "./vendor/three.mjs",
+      "three/addons/": "./vendor/addons/"
+    }
+  }</script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
