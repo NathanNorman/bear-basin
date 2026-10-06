@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-06",
+  "url": "https://nathannorman.github.io/bear-basin/",
+  "repo": "https://github.com/NathanNorman/bear-basin",
+  "visibility": "public",
+  "branch": "codex/pages",
+  "workflow": "https://github.com/NathanNorman/bear-basin/actions/runs/37469194046",
+  "verified_commit": "8256891bfcf27aee4f0c5ff1d853d0ce7211ec0b",
+  "glb_sha256": "7fb3b90c7f1b164b2087133aa725ccdfeebead0ed2eda663b51b8372ebcfd39b",
+  "meshes": 1275,
+  "crossOriginIsolated": true,
+  "physics_threads": 3,
+  "release_progress": 0.35,
+  "settled_seconds": 10.34,
+  "awake_parts_at_rest": 0,
+  "render_fps_sample": 120.0,
+  "worker_ms_sample": 5.48,
+  "lag_ms_sample": 5.57,
+  "local_tests": {
+    "viewer": 26,
+    "python": 49
+  },
+  "notes": "Browser samples describe one live seeded-by-randomness release, not a performance guarantee. Only console error was missing favicon; inline icon added subsequently."
+}

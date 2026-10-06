@@ -16,3 +16,6 @@ artifact-verification*.json
 
 # Local checkpoint copies of generated model artifacts
 .checkpoints/
+
+# Local browser verification output
+.playwright-mcp/
