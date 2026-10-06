@@ -1,88 +1,44 @@
-import RAPIER from './vendor/rapier.mjs';
-await RAPIER.init();
-const array = (v) => [v.x, v.y, v.z];
-const groups = (member, mask) => ((member << 16) | mask) >>> 0;
+import {JoltWorld} from './jolt-world.mjs';
+import {randomFromSeed} from './random.mjs';
+import {Deformable} from './deformable.mjs';
+const array=v=>[v.x,v.y,v.z];
 
-// SI units; estimated masses and simplified envelopes remain visual approximations.
+// SI units; estimated masses and simplified envelopes are visual approximations.
 export class FallSimulation {
-  constructor(descriptors) {
-    this.world = new RAPIER.World({x:0,y:-9.81,z:0});
-    this.world.integrationParameters.numSolverIterations = 8;
-    this.world.integrationParameters.numInternalPgsIterations = 1;
-    this.world.integrationParameters.contact_natural_frequency = 30;
-    this.world.integrationParameters.softBodiesContactStiffening = 1;
-    this.world.integrationParameters.softBodiesMaxExtraSubsteps = 0;
-    this.world.integrationParameters.maxCcdSubsteps = 4;
-    this.world.integrationParameters.normalizedAllowedLinearError = .0001;
-    this.world.createCollider(RAPIER.ColliderDesc.cuboid(100,50,100)
-      .setTranslation(0,-50,0).setFriction(.55).setRestitution(.02)
-      .setCollisionGroups(groups(1,15)));
-    this.records = descriptors.map((d) => {
-      if (d.points) {
-        const edges = d.edges || d.points.slice(1).map((_,i)=>[i,i+1]);
-        const material = RAPIER.SoftBodyMaterial.uniform(60, 2);
-        material.deformationDamping = 20;
-        const desc = new RAPIER.SoftBodyDesc(d.points.flat()).setEdges(edges.flat())
-          .setMaterial(material).setMass(d.mass).setParticleRadius(.012)
-          // Decoration receives contact forces without acting as a rigid support for timber.
-          .setDominanceGroup(-1).setLinearDamping(d.surface ? 3 : .8).setCanSleep(true).setShapeMatching(false).setTensionOnly()
-          .setSurfaceCollider(RAPIER.ColliderDesc.ball(.012).setFriction(.8)
-            .setRestitution(0).setCollisionGroups(groups(4,3)));
-        if (d.surface) desc.setSurface(d.surface);
-        else desc.setWire(edges.flat()).setTensionOnly();
-        const soft = this.world.createSoftBody(desc);
-        const nodes = d.points.map((p,index) => {
-          soft.setParticleVelocity(index,{x:Math.sin(index*1.7+p[0])*.025,y:0,z:Math.cos(index*1.3+p[2])*.025});
-          const raw = {translation:()=>soft.particlePosition(index),rotation:()=>({x:0,y:0,z:0,w:1}),
-            linvel:()=>soft.particleVelocity(index),isSleeping:()=>soft.isSleeping()};
-          return {raw,get position(){const v=raw.translation();return {...v,toArray:()=>array(v)};},
-            get quaternion(){return {toArray:()=>[0,0,0,1]};}};
-        });
-        return {nodes,soft};
-      }
-      const halfExtents = d.halfExtents.map((n)=>Math.max(.003,n));
-      const shape = d.vertices ? RAPIER.ColliderDesc.convexHull(new Float32Array(d.vertices.flat()))
-        : RAPIER.ColliderDesc.cuboid(...halfExtents);
-      const body = this.createBody(d.center,d.quaternion,shape,d.mass,d.hardware?8:2,d.hardware?3:15,
-        {halfExtents,vertices:d.vertices});
-      // The suspension animation releases rigid pieces with no angular motion.
-      // A slight initial tumble prevents perfectly aligned narrow rods from
-      // landing on their flat ends and remaining artificially balanced.
-      const slender = Math.max(...halfExtents) / Math.min(...halfExtents) > 6;
-      if (slender) body.raw.setAngvel({x:.65,y:.08,z:.5},true);
-      return {body};
-    });
-    this.elapsed = 0;
-    this.accumulator = 0;
+  constructor(descriptors,{seed=null,timestep=1/60}={}) {
+    this.timestep=timestep;this.seed=seed;this.engine='Jolt JS 1.1.0';
+    const random=seed===null?null:randomFromSeed(seed);
+    const nudge=()=>random?(random()-.5)*2:0;
+    this.world=new JoltWorld(descriptors.filter(d=>!d.points).length);
+    this.workerThreads=this.world.workerThreads;
+    try {
+      this.records=descriptors.map(d=> {
+        if(d.points){
+          const soft=new Deformable(d,random);
+          const nodes=d.points.map((_,index)=> {
+            const raw={translation:()=>soft.particlePosition(index),rotation:()=>({x:0,y:0,z:0,w:1}),
+              linvel:()=>soft.particleVelocity(index),isSleeping:()=>soft.isSleeping()};
+            return {raw,get position(){const v=raw.translation();return {...v,toArray:()=>array(v)};}};
+          });
+          return {nodes,soft};
+        }
+        const body=this.world.createBody(d);
+        const half=d.halfExtents.map(n=>Math.max(.003,n));
+        const slender=Math.max(...half)/Math.min(...half)>6;
+        if(slender||random)body.raw.setAngvel({x:(slender?.65:0)+nudge()*.6,y:(slender?.08:0)+nudge()*.3,z:(slender?.5:0)+nudge()*.6});
+        if(random)body.raw.setLinvel({x:nudge()*.2,y:0,z:nudge()*.2});
+        return {body};
+      });
+    }catch(error){this.world.free();throw error;}
+    this.elapsed=0;this.accumulator=0;
   }
-  createBody(p,q,shape,mass,member,mask,envelope) {
-    const desc = RAPIER.RigidBodyDesc.dynamic().setTranslation(...p)
-      .setLinearDamping(member === 4 ? 3 : .5).setAngularDamping(member === 4 ? 3 : 1).setCcdEnabled(true)
-      .setSoftCcdPrediction(.02).setCanSleep(true).setAdditionalSolverIterations(mass > .5 ? 4 : 0);
-    if(q) desc.setRotation({x:q[0],y:q[1],z:q[2],w:q[3]});
-    const raw = this.world.createRigidBody(desc);
-    this.world.createCollider(shape.setMass(Math.max(.002,mass||.1)).setFriction(.55)
-      .setRestitution(.02).setContactSkin(member === 8 ? .003 : .001).setCollisionGroups(groups(member,mask)),raw);
-    const body = {raw,envelope,aabb:{lowerBound:{y:0}},
-      get position(){const v=raw.translation();return {...v,toArray:()=>array(v)};},
-      get quaternion(){const v=raw.rotation();return {...v,toArray:()=>[v.x,v.y,v.z,v.w]};},
-      updateAABB(){
-        const p=raw.translation(),q=raw.rotation();
-        const row=[2*(q.x*q.y+q.z*q.w),1-2*(q.x*q.x+q.z*q.z),2*(q.y*q.z-q.x*q.w)];
-        const lower=envelope.radius?-envelope.radius:envelope.vertices
-          ?Math.min(...envelope.vertices.map(v=>v.reduce((s,n,i)=>s+n*row[i],0)))
-          :-envelope.halfExtents.reduce((s,n,i)=>s+n*Math.abs(row[i]),0);
-        body.aabb.lowerBound.y=p.y+lower;
-      }};
-    return body;
-  }
-  step(seconds) {
-    const dt=Math.min(.05,Math.max(0,seconds));
-    this.accumulator+=dt;
-    while(this.accumulator>=1/120-1e-9){
-      this.world.timestep=1/120;
-      this.world.step();
-      this.accumulator-=1/120;
+  step(seconds){
+    const dt=Math.min(.05,Math.max(0,seconds));this.accumulator+=dt;
+    while(this.accumulator>=this.timestep-1e-9){
+      for(let substep=0;substep<2;substep++)this.world.step(this.timestep/2);
+      const rigidActive=this.records.some(r=>r.body&&!r.body.raw.isSleeping());
+      for(const record of this.records)record.soft?.step(this.timestep,this.world,rigidActive);
+      this.accumulator-=this.timestep;
     }
     this.elapsed+=dt;
     return this.records.map(r=>r.nodes?{points:r.nodes.map(b=>array(b.raw.translation()))}

@@ -16,7 +16,7 @@ BLENDER=/path/to/blender ./build.sh
 
 The pipeline runs three isolated background Blender processes with factory startup: generate/validate, export, then independently reopen and compare saved artifacts. It stages all outputs and publishes them only after every phase succeeds. A failed build preserves the previous model and viewer export. Full diagnostics are shown; failure reports are retained as `validation.failed.json` and `artifact-verification.failed.json` when available.
 
-Generated, gitignored outputs:
+Generated outputs (the accepted GLB is committed; other build outputs remain local):
 
 - `bear_basin.blend`: modeled assembly, without a physics setup.
 - `bear_basin.json`: schema v2 manifest with members, component transforms/masses, joints and hardware.
@@ -28,11 +28,15 @@ Generated, gitignored outputs:
 
 ## View
 
+Public viewer: [nathannorman.github.io/bear-basin](https://nathannorman.github.io/bear-basin/).
+
+GitHub Pages deploys the committed GLB and viewer on every push to `main` or `codex/pages` through `.github/workflows/pages.yml`. No Blender build runs during deployment. A scoped service worker supplies cross-origin isolation for threaded Jolt; the first visit may reload once. It does not cache the site for offline use. Browsers without isolation retain the single-threaded fallback. Notes stay in the visitor’s browser.
+
 ```sh
-python3 viewer/serve.py 8472
+python3 viewer/serve.py 8473
 ```
 
-Open [the local viewer](http://127.0.0.1:8472). Drag to rotate, right-drag or Shift-drag to pan, and scroll to zoom. Click a part for its manual code. **Y-bracket close-up** frames the corrected sleeve-to-cup connections. Notes persist in the same browser and origin; use **Copy all notes** to export them. Group checkboxes hide components. The viewer loads pinned Three.js modules from unpkg and needs internet access for those modules.
+Open [the local viewer](http://127.0.0.1:8473). Drag to rotate, right-drag or Shift-drag to pan, and scroll to zoom. Click a part for its manual code. **Y-bracket close-up** frames the corrected sleeve-to-cup connections. Notes persist in the same browser and origin; use **Copy all notes** to export them. Group checkboxes hide components. Three.js and Jolt modules are vendored locally; the viewer works offline.
 
 ## Tests without Blender
 
@@ -66,12 +70,14 @@ Coordinates are metres: x points away from the swings, y+ is the tower back (cli
 
 The supplied PDF is intentionally not included in Git. The manufacturer provides manuals through its [instruction-manual page](https://www.littletikes.com/pages/instruction-manuals).
 
-The bottom **FIELD / ASSEMBLY** slider scrubs a reversible exploded animation. Hardware releases first, then roof and structure separate; **Disassemble** and **Reassemble** play the transition. Cyan points accent suspended hardware. **Show inspector** restores selection, visibility and note controls. This is a visual exploration, not a prescribed construction sequence or a collision simulation; the source model and GLB remain unchanged.
+The bottom **FIELD / ASSEMBLY** slider scrubs a reversible exploded animation. Hardware releases first, then roof and structure separate; **Disassemble** and **Reassemble** play the transition. **Release gravity** stops the transition and drops all parts from their current positions at any slider value, including the assembled model. Cyan points accent suspended hardware. **Show inspector** restores selection, visibility and note controls. The exploded sequence is a visual exploration, not a prescribed construction sequence. The subsequent fall uses physical collision solving; the source model and GLB remain unchanged.
 
-At full separation, a short suspended pause is followed automatically by a gravity release. The locally vendored Apache-2.0-licensed Rapier 0.21.0 WebAssembly engine simulates gravity at 9.81 m/s², rigid contact, friction, low restitution and native sleeping bodies. Timber and the slide use hulls derived from their visible mesh instead of oversized box envelopes. The ground is a deep solid slab. CCD and a fixed 120 Hz timestep resolve fast impacts; bodies are never teleported back onto the floor.
+At full separation, a short suspended pause is followed automatically by a fresh randomized gravity release. Three.js renders the scene; locally vendored Jolt Physics JS 1.1.0 WebAssembly solves rigid contacts in a worker. Gravity is 9.81 m/s², with friction, low restitution, continuous collision detection and native sleeping bodies. Exact rotated cuboids replace 174 rectangular timber hulls without changing their geometry; other timber and the slide retain mesh-derived hulls. Rigid simulation uses two 120 Hz steps per outer update. Small hardware receives additional native contact iterations. The threaded WebAssembly build uses SIMD and three native job workers; the local server supplies its required COOP/COEP headers. Browsers without isolation use the single-threaded build. Bodies are never teleported onto the floor.
 
-Ropes and the tarp use Rapier's native soft bodies. Rope edges resist tension; the cloth has damped tension constraints and deforming surface contacts. Soft bodies have lower contact dominance: they collide with and drape over timber, but do not hold heavy planks up or push them around. This is an explicit visual approximation. Other limitations include estimated masses, simplified steel/plastic colliders, omitted fastener-to-fastener and rope-to-rope contacts, and uncalibrated fabric stiffness and no bending resistance. The fall is a visual effect, not an engineering prediction.
+Ropes and the tarp use an XPBD particle solver: gravity, compliant tension constraints, swept sphere contacts, contact projection and friction. They collide with timber but do not push it back. Cloth has 57 simulation nodes; ropes use 4–8 nodes. Deformables sleep only after supported motion remains below 0.025 m/s for 0.75 s and rigid parts have stopped. Nearby moving rigid contacts can wake them. Rigid bodies use Jolt's native sleep. There is no timed animation cutoff or prescribed resting pose.
 
-Normal playback uses a compressed trajectory baked from the verified Rapier simulation, interpolated at render speed. The cache matches the model geometry, release transforms and physics source hashes; a mismatch uses the live worker solver. Position samples have 0.1 mm resolution. Reassembling or moving the slider terminates that worker and restores the original meshes. The recorded trajectory ends only after the physics engine puts every body to sleep; there is no arbitrary timed freeze. Regenerate it after model or physics changes with `node --experimental-loader ./scripts/three-loader.mjs ./scripts/bake-fall.mjs`. Verify playback with the matching `scripts/verify-playback.mjs` command. Hardware remains instanced to reduce draw calls.
+The worker owns its clock. Rendering interpolates snapshots, and hardware remains instanced. Every release gets a cryptographically generated seed for small initial linear/angular velocities; `?seed=42` fixes those initial conditions for debugging. The default viewer does not load the baked trajectory. Reassembly or slider interaction terminates the worker and restores original meshes. The previous smooth baked version remains recoverable from the [checkpoint](docs/checkpoint.md).
 
-Verification: run `node --test viewer/tests/*.test.mjs`, then `node --experimental-loader ./scripts/three-loader.mjs ./scripts/verify-fall.mjs`. The second command loads the actual GLB, runs twenty simulated seconds, checks native sleep, escaped parts, finite poses, late motion and mesh restoration. Research and receipts are in [docs/physics-research.md](docs/physics-research.md).
+This is a visual physics effect, not an engineering prediction. Masses and drag are estimates; steel/plastic use simplified colliders; slide concavities are hull-filled; tiny fastener mutual contacts, textile self-contact, textile-to-hardware contacts, bending resistance and textile force feedback are omitted.
+
+Verification: `node --test viewer/tests/*.test.mjs`, then `node --experimental-loader ./scripts/three-loader.mjs ./scripts/verify-fall.mjs 42`. The latter loads the actual GLB, allows twenty simulated seconds for settling, then checks another five seconds for exact unchanged rest, visible geometry below the floor, finite poses, upright narrow components and mesh restoration. Profiling: `JOLT_THREADS=3 node --experimental-loader ./scripts/three-loader.mjs ./scripts/profile-fall.mjs baseline 42`. Research and current receipts are in [docs/physics-research.md](docs/physics-research.md).

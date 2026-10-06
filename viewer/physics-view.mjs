@@ -11,7 +11,7 @@ function metadata(object, key) {
 }
 
 export class PhysicsView {
-  constructor(pieces, {useWorker=false,trajectory=null} = {}) {
+  constructor(pieces, {useWorker=false,trajectory=null,seed=null} = {}) {
     this.entries = pieces.map(({ object }) => {
       object.updateWorldMatrix(true, false);
       object.geometry.computeBoundingBox();
@@ -50,7 +50,7 @@ export class PhysicsView {
         entry.original = object.geometry;
         let geometry = object.geometry.index ? object.geometry.toNonIndexed() : object.geometry.clone();
         // Subdivide the existing fabric surface so it can bend between particles.
-        for (let level = 0; level < 2; level++) {
+        for (let level = 0; level < 1; level++) {
           const attr = geometry.attributes.position, vertices = [];
           for (let i = 0; i < attr.count; i += 3) {
             const a = new THREE.Vector3().fromBufferAttribute(attr, i);
@@ -87,8 +87,9 @@ export class PhysicsView {
         // existing vertices to obtain a flexible chain without adding rigid boxes.
         const lengths = box.getSize(new THREE.Vector3()).toArray();
         const axis = lengths.indexOf(Math.max(...lengths));
+        descriptor.radius=Math.max(.002,Math.min(...descriptor.halfExtents.filter((_,i)=>i!==axis)));
         const min = box.min.toArray()[axis], span = Math.max(.001, lengths[axis]);
-        const count = Math.max(4, Math.min(14, Math.ceil(span / .2)));
+        const count = Math.max(4, Math.min(8, Math.ceil(span / .3)));
         const attr = object.geometry.attributes.position;
         const sums = Array.from({length:count}, () => new THREE.Vector3());
         const counts = Array(count).fill(0);
@@ -112,9 +113,15 @@ export class PhysicsView {
           else sums[i].copy(sums[lo]).lerp(sums[hi], (i - lo) / (hi - lo));
         }
         entry.weights = weights;
-        entry.offsets = vertices.map((p, i) => {
-          const lo = Math.floor(weights[i]), hi = Math.min(count - 1, lo + 1);
-          return p.sub(sums[lo].clone().lerp(sums[hi], weights[i] - lo));
+        entry.tangents = [];
+        entry.offsets = vertices.map((p,i)=> {
+          const lo=Math.floor(weights[i]),hi=Math.min(count-1,lo+1);
+          const tangent=sums[hi===lo?Math.max(0,lo-1):lo].clone().sub(sums[hi]).normalize().negate();
+          entry.tangents.push(tangent);
+          const offset=p.sub(sums[lo].clone().lerp(sums[hi],weights[i]-lo));
+          offset.addScaledVector(tangent,-offset.dot(tangent));
+          if(offset.length()>descriptor.radius)offset.setLength(descriptor.radius);
+          return offset;
         });
         entry.original = object.geometry;
         object.geometry = object.geometry.clone();
@@ -130,11 +137,14 @@ export class PhysicsView {
     const descriptors=this.entries.map(entry=>entry.descriptor);
     const cached=trajectory && trajectory.header.key===trajectoryKey(descriptors);
     const Simulation = useWorker && typeof Worker !== 'undefined' ? WorkerSimulation : FallSimulation;
-    this.simulation = cached ? new BakedSimulation(descriptors,trajectory) : new Simulation(descriptors);
+    this.simulation = cached ? new BakedSimulation(descriptors,trajectory) : new Simulation(descriptors,{seed});
     this.cached=!!cached;
     this.frame = 0;
     this.point = new THREE.Vector3();
     this.rotation = new THREE.Quaternion();
+    this.tangent = new THREE.Vector3();
+    this.ropeRotation = new THREE.Quaternion();
+    this.ropeOffset = new THREE.Vector3();
   }
   step(dt) {
     const poses = this.simulation.step(dt);
@@ -151,7 +161,11 @@ export class PhysicsView {
         });
         else entry.weights.forEach((weight, i) => {
           const lo = Math.floor(weight), hi = Math.min(points.length - 1, lo + 1);
-          const p = this.point.copy(points[lo]).lerp(points[hi], weight - lo).add(entry.offsets[i]);
+          const a=hi===lo?Math.max(0,lo-1):lo;
+          this.tangent.copy(points[hi]).sub(points[a]).normalize();
+          this.ropeRotation.setFromUnitVectors(entry.tangents[i],this.tangent);
+          this.ropeOffset.copy(entry.offsets[i]).applyQuaternion(this.ropeRotation);
+          const p = this.point.copy(points[lo]).lerp(points[hi], weight - lo).add(this.ropeOffset);
           p.applyMatrix4(entry.inverseWorld);
           attr.setXYZ(i, p.x, p.y, p.z);
         });

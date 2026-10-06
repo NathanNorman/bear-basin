@@ -32,8 +32,8 @@ const flatten=poses=>Float32Array.from(poses.flatMap(p=>p.points?p.points.flat()
 frames.push(flatten(fall.simulation.step(0)));
 for(let tick=0;tick<1800 && fall.simulation.active;tick++)frames.push(flatten(fall.simulation.step(1/60)));
 assert.equal(fall.simulation.active,false,'never cache an unsettled pile');
-const header={version:1,key,fps:60,frames:frames.length,stride:frames[0].length,nativeSleep:true,engine:'Rapier 0.21.0',encoding:'delta-i32',scale:10000};
-header.sources=Object.fromEntries(['fall-physics.mjs','disassembly.mjs'].map(file=>[
+const header={version:1,key,fps:60,frames:frames.length,stride:frames[0].length,nativeSleep:fall.simulation.records.filter(r=>r.body).every(r=>r.body.raw.isSleeping()),engine:fall.simulation.engine,rigidNativeSleep:true,deformableSleep:'xpbd',encoding:'delta-i32',scale:10000};
+header.sources=Object.fromEntries(['fall-physics.mjs','jolt-world.mjs','deformable.mjs','collision-shapes.mjs','random.mjs','disassembly.mjs','vendor/jolt.mjs','vendor/jolt-physics.multithread.wasm-compat.js'].map(file=>[
   file,createHash('sha256').update(fs.readFileSync(new URL('../viewer/'+file,import.meta.url))).digest('hex')]));
 const encoded=Buffer.from(JSON.stringify(header));
 const offset=4+Math.ceil(encoded.length/4)*4;
@@ -46,6 +46,6 @@ frames.forEach((frame,i)=>frame.forEach((value,j)=> {
   previous[j]=quantized;
 }));
 const compressed=gzipSync(buffer,{level:9});
-fs.writeFileSync(new URL('../viewer/fall-trajectory.bin.gz',import.meta.url),compressed);
+fs.writeFileSync(process.argv[2]||new URL('../viewer/fall-trajectory.bin.gz',import.meta.url),compressed);
 console.log(JSON.stringify({...header,compressedBytes:compressed.length,simulationSeconds:fall.simulation.elapsed}));
 fall.reset();

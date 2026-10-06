@@ -1,0 +1,440 @@
+{
+  "verifiedAt": "2026-10-05T21:53:54.924470+00:00",
+  "checkpoint": "codex/checkpoint-2026-10-05-smooth-physics",
+  "engine": "Jolt Physics JS 1.1.0",
+  "rigidBodies": 1234,
+  "flexibleParts": 41,
+  "deformableParticles": 309,
+  "rigidSubstepHz": 120,
+  "workerThreads": 3,
+  "renderer": "Three.js 0.160.0",
+  "runtime": "Fresh seeded live physics; no default trajectory replay",
+  "sources": {
+    "viewer/fall-physics.mjs": "2e7a080c65c130633ad6a1fe2080e4f42330923657ff4f4cd2078f1aebbf75bc",
+    "viewer/jolt-world.mjs": "d4d44a8d50702cd6e98c4f5626d3bf1b2449a68bdb108c556911274c358918b4",
+    "viewer/collision-shapes.mjs": "d7214d48f313d4c71eb778737fb6cd9eb4e850194e5a558b4bcfd6a9196abd03",
+    "viewer/deformable.mjs": "db16651dd60447278c0d7296d8539f20ac6e09ed485f21f3e36aa06e598990df",
+    "viewer/random.mjs": "f5a7c4fa7608176d61c71e790a12d479ce80f70f5bb55d9950ad2ebfdc1a1210",
+    "viewer/physics-view.mjs": "3414dbc6e3a13ace75317baa639cde41680c9f36a25c67c828cc378046333b4f",
+    "viewer/physics-worker.mjs": "e70e1c28ca00d705f04c3799880960249d98ff91906cfc40de39336b8b26b92d",
+    "viewer/worker-simulation.mjs": "893107f0ca8cc40e510194cbdce967c5d01234f2ceb464f07d0f43f3d4070874",
+    "viewer/viewer.js": "b6ea6c8a543c2581f1f79b9b4f6ad1894ca12f18408d8b728e335b742179e58e",
+    "viewer/serve.py": "0954fb46cc70ecb1922897209b12c24cea7a9ce5b843eb6d31c8364a4c10d47c",
+    "viewer/vendor/jolt.mjs": "011233a5fff762d6f0f5b50726b315246bf68cb182f0a10024559d04f4c257de",
+    "viewer/vendor/jolt-physics.multithread.wasm-compat.js": "79485cef6a1173d5ed9791cff5e9e2e27af7b2715a4c4caa486a1f5c9c283a8e"
+  },
+  "modelSha256": "7fb3b90c7f1b164b2087133aa725ccdfeebead0ed2eda663b51b8372ebcfd39b",
+  "generatedArtifactsUnchanged": true,
+  "checkpointArchiveUnchanged": true,
+  "unitTests": {
+    "pythonPassed": 49,
+    "viewerSingleThreadPassed": 26,
+    "viewerMultithreadPassed": 26
+  },
+  "fullModelSeeds": [
+    {
+      "meshes": 1275,
+      "flexibleParts": 41,
+      "samples": [
+        {
+          "seconds": 5,
+          "awake": 702
+        },
+        {
+          "seconds": 10,
+          "awake": 4
+        },
+        {
+          "seconds": 15,
+          "awake": 0
+        },
+        {
+          "seconds": 20,
+          "awake": 0
+        }
+      ],
+      "seed": 42,
+      "signature": "bf3b788d",
+      "settledAt": 10.133333333333333,
+      "exactPrimitiveBoxes": 174,
+      "rigidBodiesSleeping": true,
+      "rigidSleepPolicy": "native",
+      "deformableSleep": true,
+      "lateDisplacement": 0,
+      "minVisualHeight": -0.0006210063329149772,
+      "minCenterHeight": -2.3096799850463867e-06,
+      "tallNarrowComponents": 0,
+      "finite": true,
+      "geometryRestored": true
+    },
+    {
+      "meshes": 1275,
+      "flexibleParts": 41,
+      "samples": [
+        {
+          "seconds": 5,
+          "awake": 626
+        },
+        {
+          "seconds": 10,
+          "awake": 622
+        },
+        {
+          "seconds": 15,
+          "awake": 0
+        },
+        {
+          "seconds": 20,
+          "awake": 0
+        }
+      ],
+      "seed": 4131,
+      "signature": "cd52254d",
+      "settledAt": 14.116666666666667,
+      "exactPrimitiveBoxes": 174,
+      "rigidBodiesSleeping": true,
+      "rigidSleepPolicy": "native",
+      "deformableSleep": true,
+      "lateDisplacement": 0,
+      "minVisualHeight": -0.0021864498424371695,
+      "minCenterHeight": -0.0001987665891647339,
+      "tallNarrowComponents": 0,
+      "finite": true,
+      "geometryRestored": true
+    },
+    {
+      "meshes": 1275,
+      "flexibleParts": 41,
+      "samples": [
+        {
+          "seconds": 5,
+          "awake": 642
+        },
+        {
+          "seconds": 10,
+          "awake": 593
+        },
+        {
+          "seconds": 15,
+          "awake": 0
+        },
+        {
+          "seconds": 20,
+          "awake": 0
+        }
+      ],
+      "seed": 1,
+      "signature": "c8f0dfe4",
+      "settledAt": 11.75,
+      "exactPrimitiveBoxes": 174,
+      "rigidBodiesSleeping": true,
+      "rigidSleepPolicy": "native",
+      "deformableSleep": true,
+      "lateDisplacement": 0,
+      "minVisualHeight": -0.0012797344451032783,
+      "minCenterHeight": -8.437782526016235e-06,
+      "tallNarrowComponents": 0,
+      "finite": true,
+      "geometryRestored": true
+    },
+    {
+      "meshes": 1275,
+      "flexibleParts": 41,
+      "samples": [
+        {
+          "seconds": 5,
+          "awake": 647
+        },
+        {
+          "seconds": 10,
+          "awake": 0
+        },
+        {
+          "seconds": 15,
+          "awake": 0
+        },
+        {
+          "seconds": 20,
+          "awake": 0
+        }
+      ],
+      "seed": 299,
+      "signature": "2c0612b4",
+      "settledAt": 8.316666666666666,
+      "exactPrimitiveBoxes": 174,
+      "rigidBodiesSleeping": true,
+      "rigidSleepPolicy": "native",
+      "deformableSleep": true,
+      "lateDisplacement": 0,
+      "minVisualHeight": -0.0007592430515807221,
+      "minCenterHeight": -6.125122308731079e-05,
+      "tallNarrowComponents": 0,
+      "finite": true,
+      "geometryRestored": true
+    }
+  ],
+  "profiles": {
+    "threaded": {
+      "engine": "Jolt JS 1.1.0",
+      "mode": "baseline",
+      "seed": 42,
+      "initMs": 13.586207999999942,
+      "rigidBodies": 1234,
+      "flexibleParts": 41,
+      "particles": 309,
+      "phases": [
+        {
+          "second": 1,
+          "meanMs": 11.334374333333331,
+          "p95Ms": 13.195167000000083,
+          "maxMs": 33.777624999999944
+        },
+        {
+          "second": 2,
+          "meanMs": 11.146849349999984,
+          "p95Ms": 16.585625000000164,
+          "maxMs": 21.832583000000113
+        },
+        {
+          "second": 3,
+          "meanMs": 9.289764516666697,
+          "p95Ms": 11.828541999999743,
+          "maxMs": 20.75008300000036
+        },
+        {
+          "second": 4,
+          "meanMs": 10.306156350000007,
+          "p95Ms": 13.10629199999994,
+          "maxMs": 16.368625000000065
+        },
+        {
+          "second": 5,
+          "meanMs": 9.37631661666666,
+          "p95Ms": 16.956542000000354,
+          "maxMs": 29.323707999999897
+        },
+        {
+          "second": 6,
+          "meanMs": 8.002415333333328,
+          "p95Ms": 9.019416999999976,
+          "maxMs": 9.593416000000161
+        },
+        {
+          "second": 7,
+          "meanMs": 8.487043716666646,
+          "p95Ms": 9.534624999999323,
+          "maxMs": 11.136750000000575
+        },
+        {
+          "second": 8,
+          "meanMs": 9.311763250000029,
+          "p95Ms": 11.306042000000161,
+          "maxMs": 12.393458999999893
+        },
+        {
+          "second": 9,
+          "meanMs": 8.715171516666699,
+          "p95Ms": 9.621208999999908,
+          "maxMs": 10.362041000000318
+        },
+        {
+          "second": 10,
+          "meanMs": 3.7124048000000887,
+          "p95Ms": 5.680624999999964,
+          "maxMs": 9.259541999999783
+        },
+        {
+          "second": 11,
+          "meanMs": 0.6035054666666989,
+          "p95Ms": 0.7515000000003056,
+          "maxMs": 0.9829579999995985
+        },
+        {
+          "second": 12,
+          "meanMs": 0.6657263666666495,
+          "p95Ms": 1.0154999999995198,
+          "maxMs": 4.046207999999751
+        }
+      ],
+      "active": false,
+      "awake": []
+    },
+    "singleThreaded": {
+      "engine": "Jolt JS 1.1.0",
+      "mode": "baseline",
+      "seed": 42,
+      "initMs": 11.124500000000012,
+      "rigidBodies": 1234,
+      "flexibleParts": 41,
+      "particles": 309,
+      "phases": [
+        {
+          "second": 1,
+          "meanMs": 19.12568896666666,
+          "p95Ms": 31.424000000000206,
+          "maxMs": 92.77974999999998
+        },
+        {
+          "second": 2,
+          "meanMs": 40.92374585000003,
+          "p95Ms": 103.97020900000007,
+          "maxMs": 129.7126659999999
+        },
+        {
+          "second": 3,
+          "meanMs": 43.312054166666634,
+          "p95Ms": 90.85166599999957,
+          "maxMs": 115.38466599999992
+        },
+        {
+          "second": 4,
+          "meanMs": 26.302068050000084,
+          "p95Ms": 41.40745900000002,
+          "maxMs": 50.41620799999964
+        },
+        {
+          "second": 5,
+          "meanMs": 25.74045349999995,
+          "p95Ms": 60.311250000000655,
+          "maxMs": 113.68941599999926
+        },
+        {
+          "second": 6,
+          "meanMs": 23.99551873333339,
+          "p95Ms": 32.75199999999859,
+          "maxMs": 55.63245900000038
+        },
+        {
+          "second": 7,
+          "meanMs": 18.436514599999917,
+          "p95Ms": 20.78137500000048,
+          "maxMs": 22.970832999999402
+        },
+        {
+          "second": 8,
+          "meanMs": 17.81599581666666,
+          "p95Ms": 22.63641599999937,
+          "maxMs": 24.600749999999607
+        },
+        {
+          "second": 9,
+          "meanMs": 18.255718783333336,
+          "p95Ms": 25.043499999999767,
+          "maxMs": 35.54466700000012
+        },
+        {
+          "second": 10,
+          "meanMs": 3.973566733333458,
+          "p95Ms": 5.615832999999839,
+          "maxMs": 12.424791999999798
+        },
+        {
+          "second": 11,
+          "meanMs": 0.5278311833334859,
+          "p95Ms": 0.6732090000004973,
+          "maxMs": 1.1421669999999722
+        },
+        {
+          "second": 12,
+          "meanMs": 0.5005070833333473,
+          "p95Ms": 0.675374999998894,
+          "maxMs": 0.7111669999994774
+        }
+      ],
+      "active": false,
+      "awake": []
+    }
+  },
+  "browserRuns": [
+    {
+      "animationFps": "120.0",
+      "awakeParts": "[]",
+      "drawCalls": "327",
+      "physicsEngine": "Jolt JS 1.1.0",
+      "physicsInitMs": "16.52",
+      "physicsLagMs": "1.67",
+      "physicsMeanMs": "8.59",
+      "physicsMode": "live",
+      "physicsP95Ms": "15.63",
+      "physicsResult": "d05059fd",
+      "physicsSeconds": "8.54",
+      "physicsSeed": "1132629138",
+      "physicsThreads": "3",
+      "physicsUpdates": "462",
+      "physicsWallSeconds": "8.54",
+      "physicsWorkerMs": "1.60",
+      "poseUpdateMs": "1.04",
+      "stage": "before scheduling-stall catch-up"
+    },
+    {
+      "animationFps": "120.0",
+      "awakeParts": "[]",
+      "drawCalls": "327",
+      "physicsEngine": "Jolt JS 1.1.0",
+      "physicsInitMs": "14.81",
+      "physicsLagMs": "113.18",
+      "physicsMeanMs": "10.35",
+      "physicsMode": "live",
+      "physicsP95Ms": "19.04",
+      "physicsResult": "46eb2fd1",
+      "physicsSeconds": "9.23",
+      "physicsSeed": "2083238497",
+      "physicsThreads": "3",
+      "physicsUpdates": "483",
+      "physicsWallSeconds": "9.34",
+      "physicsWorkerMs": "4.99",
+      "poseUpdateMs": "1.06",
+      "stage": "before scheduling-stall catch-up"
+    },
+    {
+      "animationFps": "120.0",
+      "awakeParts": "[]",
+      "drawCalls": "327",
+      "physicsEngine": "Jolt JS 1.1.0",
+      "physicsInitMs": "15.50",
+      "physicsLagMs": "4.63",
+      "physicsMeanMs": "8.86",
+      "physicsMode": "live",
+      "physicsP95Ms": "15.81",
+      "physicsResult": "4221077c",
+      "physicsSeconds": "7.10",
+      "physicsSeed": "1143466761",
+      "physicsThreads": "3",
+      "physicsUpdates": "382",
+      "physicsWallSeconds": "7.11",
+      "physicsWorkerMs": "4.53",
+      "poseUpdateMs": "1.06",
+      "stage": "final worker clock"
+    }
+  ],
+  "browserChecks": {
+    "distinctSeedsAndRestSignatures": true,
+    "allSettled": true,
+    "reassemblyRestored": true,
+    "reverseScrub420ToZero": true,
+    "consoleErrorsOrWarnings": [],
+    "url": "http://127.0.0.1:8473/",
+    "screenshot": "physics-live.jpg"
+  },
+  "optionalRecording": {
+    "cached": true,
+    "frames": 462,
+    "duration": 7.683333333333334,
+    "cpuMsMean": 0.7545428493282138,
+    "cpuMsP95": 0.9989579999999023,
+    "nativeSleep": true,
+    "restingUnchanged": true,
+    "geometryRestored": true
+  },
+  "tolerances": {
+    "fullModelVisibleGroundPenetrationMeters": 0.003,
+    "fastenerTransientPenetrationMeters": 0.005,
+    "fastenerRestingPenetrationMeters": 0.0021
+  },
+  "limits": [
+    "Estimated masses, drag and material properties",
+    "Simplified steel/plastic boxes and convex-filled slide",
+    "No tiny-fastener mutual contacts",
+    "XPBD textiles have no force feedback, bending resistance, self-contact or hardware contact"
+  ]
+}

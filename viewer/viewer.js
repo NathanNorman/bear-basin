@@ -1,9 +1,9 @@
+import {freshSeed,poseSignature} from './random.mjs';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { isCoordinate, isVisible, readPartMetadata, SelectionHighlight } from './model-state.mjs';
 import { partPath, samplePath, smooth } from './disassembly.mjs';
-import {loadTrajectory} from './baked-simulation.mjs';
 import { PhysicsView } from './physics-view.mjs';
 import { HardwareInstances } from './hardware-instances.mjs';
 
@@ -34,8 +34,6 @@ export function startViewer(state) {
   let animation = null;
   let fieldPoints = null;
   let fall = null;
-  let trajectory=null;
-  const trajectoryReady=loadTrajectory().then(value=>{trajectory=value;});
   let releaseAt = null;
   let lastPhysicsFrame = null;
   let hardwareInstances = null;
@@ -66,6 +64,7 @@ export function startViewer(state) {
       if (releaseAt !== null) {
         if (now >= releaseAt) {
           releaseAt = null;
+          get('gravity').disabled = true;
           prepareFall();
           lastPhysicsFrame = now;
           fieldPoints.visible = false;
@@ -92,6 +91,12 @@ export function startViewer(state) {
           return;
         }
         viewport.dataset.physicsSeconds = fall.simulation.elapsed.toFixed(2);
+        viewport.dataset.physicsEngine=fall.simulation.engine||'initializing';
+        viewport.dataset.physicsThreads=String(fall.simulation.workerThreads||0);
+        viewport.dataset.physicsWorkerMs=String(fall.simulation.workerMs?.toFixed(2)||'');
+        viewport.dataset.physicsWallSeconds=String(fall.simulation.wallSeconds?.toFixed(2)||'');
+        viewport.dataset.physicsLagMs=String(fall.simulation.lagMs?.toFixed(2)||'');
+        viewport.dataset.physicsUpdates=String(fall.simulation.updates||0);
         viewport.dataset.awakeParts = JSON.stringify(fall.simulation.awake || []);
         if (fall.simulation.elapsed < 1.8) {
           controls.target.y += (.45 - controls.target.y) * Math.min(1, dt * 2);
@@ -101,6 +106,10 @@ export function startViewer(state) {
         else {
           lastPhysicsFrame = null;
           get('explode-value').textContent = 'SETTLED';
+          viewport.dataset.physicsResult=poseSignature(fall.simulation.poses);
+          const costs=fall.simulation.costs.filter(Number.isFinite).sort((a,b)=>a-b);
+          viewport.dataset.physicsMeanMs=(costs.reduce((sum,n)=>sum+n,0)/costs.length).toFixed(2);
+          viewport.dataset.physicsP95Ms=costs[Math.floor((costs.length-1)*.95)].toFixed(2);
         }
       }
       // OrbitControls emits change while damping settles, scheduling the next frame.
@@ -164,30 +173,33 @@ export function startViewer(state) {
     state.disassembly = progress;
     requestRender();
   }
-  function fieldView() {
-    moveCamera(new THREE.Vector3(5, 6, -18), new THREE.Vector3(-.5, 2.6, .3));
+  function enterFieldMode() {
     document.body.classList.add('field-mode');
     get('inspect').textContent = 'Show inspector';
   }
   function animateDisassembly(to) {
     resetFall();
     setDisassembly(progress);
-    if (to > 0) fieldView();
+    if (to > 0) enterFieldMode();
     animation = { from: progress, to, start: null };
     requestRender();
   }
   function prepareFall() {
     if(fall)return;
+    for(const key of ['physicsResult','physicsMeanMs','physicsP95Ms'])delete viewport.dataset[key];
     const start=performance.now();
-          fall = new PhysicsView(pieces, {useWorker:true,trajectory});
-          if(new URLSearchParams(location.search).has('physics-debug')) {
-            const dump=document.createElement('script');
-            dump.id='physics-descriptors';dump.type='application/json';
-            dump.textContent=JSON.stringify(fall.entries.map(e=>e.descriptor));
-            document.getElementById(dump.id)?.remove();
-            document.body.appendChild(dump);
-          }
-          viewport.dataset.physicsMode=fall.cached?'cached':'live';
+    const override=new URLSearchParams(location.search).get('seed');
+    const seed=override!==null&&/^\d+$/.test(override)?Number(override)>>>0:freshSeed();
+    fall = new PhysicsView(pieces, {useWorker:true,seed});
+    viewport.dataset.physicsSeed=String(seed);
+    if(new URLSearchParams(location.search).has('physics-debug')) {
+      const dump=document.createElement('script');
+      dump.id='physics-descriptors';dump.type='application/json';
+      dump.textContent=JSON.stringify(fall.entries.map(e=>e.descriptor));
+      document.getElementById(dump.id)?.remove();
+      document.body.appendChild(dump);
+    }
+    viewport.dataset.physicsMode=fall.cached?'cached':'live';
     viewport.dataset.physicsInitMs=(performance.now()-start).toFixed(2);
   }
   function resetFall() {
@@ -195,17 +207,33 @@ export function startViewer(state) {
     lastPhysicsFrame = null;
     fall?.reset();
     fall = null;
+    get('gravity').disabled = pieces.length === 0;
   }
-  listen(get('explode'), 'pointerdown', () => { resetFall(); animation = null; if (progress === 0) fieldView(); });
+  listen(get('explode'), 'pointerdown', () => {
+    resetFall();
+    animation = null;
+    setDisassembly(progress);
+    if (progress === 0) enterFieldMode();
+  });
   listen(get('explode'), 'input', (event) => {
     animation = null;
     resetFall();
-    if (progress === 0 && Number(event.target.value) > 0) fieldView();
+    if (progress === 0 && Number(event.target.value) > 0) enterFieldMode();
     setDisassembly(Number(event.target.value) / 1000);
     if (progress === 1) { prepareFall(); releaseAt = performance.now() + 650; }
   });
   listen(get('disassemble'), 'click', () => animateDisassembly(1));
   listen(get('assemble'), 'click', () => animateDisassembly(0));
+  listen(get('gravity'), 'click', () => {
+    if (lastPhysicsFrame !== null) return;
+    animation = null;
+    enterFieldMode();
+    prepareFall();
+    viewport.dataset.gravityReleaseProgress = String(progress);
+    get('gravity').disabled = true;
+    releaseAt = performance.now();
+    requestRender();
+  });
   listen(get('inspect'), 'click', () => {
     const hidden = document.body.classList.toggle('field-mode');
     get('inspect').textContent = hidden ? 'Show inspector' : 'Hide inspector';
@@ -319,8 +347,7 @@ export function startViewer(state) {
       fieldPoints.visible = false;
       scene.add(fieldPoints);
       hardwareInstances = new HardwareInstances(pickables, scene);
-      await trajectoryReady;
-      for (const id of ['explode', 'assemble', 'disassemble']) get(id).disabled = false;
+      for (const id of ['explode', 'assemble', 'disassemble', 'gravity']) get(id).disabled = false;
       renderGroups();
       state.status = 'ready';
       modelStatus(`${pickables.length.toLocaleString()} meshes loaded.`);

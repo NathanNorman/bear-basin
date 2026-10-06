@@ -23,12 +23,13 @@ root.traverse(object=> {
   object.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(...pose.turn)));
 });
 root.updateWorldMatrix(true,true);
-const raw=gunzipSync(fs.readFileSync(new URL('../viewer/fall-trajectory.bin.gz',import.meta.url)));
+const raw=gunzipSync(fs.readFileSync(process.argv[2]||new URL('../viewer/fall-trajectory.bin.gz',import.meta.url)));
 const cache=decodeTrajectory(raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength));
 const fall=new PhysicsView(pieces,{trajectory:cache});
 assert.equal(fall.cached,true,'the real model must match the cached trajectory');
 const timings=[];
-for(let tick=0;tick<600;tick++) {
+const playbackTicks=Math.ceil(((cache.header.frames-1)/cache.header.fps+1)*120);
+for(let tick=0;tick<playbackTicks;tick++) {
   const start=performance.now();fall.step(1/120);timings.push(performance.now()-start);
 }
 assert.equal(fall.simulation.active,false);

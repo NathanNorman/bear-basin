@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bear Basin viewer</title>
+  <script src="coi-serviceworker.js"></script>
   <link rel="stylesheet" href="viewer.css">
 </head>
 <body>
@@ -11,9 +12,9 @@
   <section id="disassembly" aria-label="Disassembly animation">
     <div class="disassembly-title"><span>FIELD / ASSEMBLY</span><output id="explode-value" for="explode">ASSEMBLED · 0%</output></div>
     <label for="explode">Drag to disassemble / reassemble</label>
-    <div class="release-hint">At full separation, gravity takes over.</div>
+    <div class="release-hint">Release gravity at any point, or let it take over at full separation.</div>
     <input id="explode" type="range" min="0" max="1000" value="0" disabled>
-    <div class="disassembly-actions"><button id="assemble" type="button" disabled>Reassemble</button><button id="disassemble" type="button" disabled>Disassemble</button><button id="inspect" type="button">Hide inspector</button></div>
+    <div class="disassembly-actions"><button id="assemble" type="button" disabled>Reassemble</button><button id="disassemble" type="button" disabled>Disassemble</button><button id="gravity" type="button" disabled>Release gravity</button><button id="inspect" type="button">Hide inspector</button></div>
   </section>
   <aside id="panel" aria-label="Model controls and notes">
     <div id="help">Drag: rotate · Right-drag or Shift-drag: pan · Scroll: zoom · Click a part to select it</div>

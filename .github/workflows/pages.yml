@@ -1,0 +1,38 @@
+name: Deploy viewer to GitHub Pages
+on:
+  push:
+    branches: [main, codex/pages]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify viewer
+        run: node --test viewer/tests/*.test.mjs
+      - uses: actions/configure-pages@v5
+      - name: Stage static site
+        run: |
+          mkdir _site
+          cp viewer/*.html viewer/*.css viewer/*.js viewer/*.mjs viewer/*.glb viewer/*.gz _site/
+          cp -R viewer/vendor _site/vendor
+          touch _site/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
