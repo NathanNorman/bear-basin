@@ -115,3 +115,30 @@ test('a rope supported above the floor by a plank recognizes CCD contact and sle
   for(let i=0;i<60;i++)sim.step(1/60);
   assert.deepEqual(sim.step(0),poses);
 });
+
+test('cloth faces land on a narrow beam even when their vertices miss it', (t) => {
+  const points=[[-.8,1.5,-.6],[.8,1.5,-.6],[.8,1.5,.6],[-.8,1.5,.6]];
+  const sim=new FallSimulation([
+    {...box(.2,1000),halfExtents:[.06,.2,1]},
+    {mass:1,points,surface:[0,1,2,0,2,3],edges:[[0,1],[1,2],[2,3],[3,0],[0,2]]}
+  ]);
+  t.after(()=>sim.dispose());
+  let poses;
+  for(let i=0;i<1200;i++)poses=sim.step(1/120);
+  const [a,,c]=poses[1].points;
+  const centerY=(a[1]+c[1])/2;
+  assert.ok(centerY>.39,`fabric spanning the beam must stay above it, got ${centerY}`);
+});
+
+test('a fast cloth face cannot tunnel through a thin beam between steps', (t) => {
+  const points=[[-.8,1,-.6],[.8,1,-.6],[.8,1,.6],[-.8,1,.6]];
+  const sim=new FallSimulation([
+    {...box(.5,1000),halfExtents:[.06,.025,1]},
+    {mass:1,points,surface:[0,1,2,0,2,3],edges:[[0,1],[1,2],[2,3],[3,0],[0,2]]}
+  ]);
+  t.after(()=>sim.dispose());
+  for(let i=1;i<sim.records[1].soft.velocities.length;i+=3)sim.records[1].soft.velocities[i]=-60;
+  const poses=sim.step(1/60),[a,,c]=poses[1].points;
+  const centerY=(a[1]+c[1])/2;
+  assert.ok(centerY>.52,`swept fabric must stay on the incoming side, got ${centerY}`);
+});

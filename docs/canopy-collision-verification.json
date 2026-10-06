@@ -1,0 +1,209 @@
+{
+  "date": "2026-10-06",
+  "change": "Canopy face contacts and mean-translation sweeps against structural colliders; barycentric contact response and face-aware waking. Empty swept bounds skip hull creation.",
+  "regression_tests": [
+    "cloth faces land on a narrow beam even when their vertices miss it",
+    "a fast cloth face cannot tunnel through a thin beam between steps"
+  ],
+  "viewer_tests": 28,
+  "threaded_tests": 28,
+  "full_model_seeds": [
+    {
+      "meshes": 1275,
+      "flexibleParts": 41,
+      "samples": [
+        {
+          "seconds": 5,
+          "awake": 702
+        },
+        {
+          "seconds": 10,
+          "awake": 4
+        },
+        {
+          "seconds": 15,
+          "awake": 0
+        },
+        {
+          "seconds": 20,
+          "awake": 0
+        }
+      ],
+      "seed": 42,
+      "signature": "2057383c",
+      "settledAt": 10.133333333333333,
+      "exactPrimitiveBoxes": 174,
+      "rigidBodiesSleeping": true,
+      "rigidSleepPolicy": "native",
+      "deformableSleep": true,
+      "lateDisplacement": 0,
+      "minVisualHeight": -0.0006210063329149772,
+      "minCenterHeight": -2.3096799850463867e-06,
+      "tallNarrowComponents": 0,
+      "finite": true,
+      "geometryRestored": true
+    },
+    {
+      "meshes": 1275,
+      "flexibleParts": 41,
+      "samples": [
+        {
+          "seconds": 5,
+          "awake": 626
+        },
+        {
+          "seconds": 10,
+          "awake": 622
+        },
+        {
+          "seconds": 15,
+          "awake": 0
+        },
+        {
+          "seconds": 20,
+          "awake": 0
+        }
+      ],
+      "seed": 4131,
+      "signature": "00163775",
+      "settledAt": 12.133333333333333,
+      "exactPrimitiveBoxes": 174,
+      "rigidBodiesSleeping": true,
+      "rigidSleepPolicy": "native",
+      "deformableSleep": true,
+      "lateDisplacement": 0,
+      "minVisualHeight": -0.0021864498424371695,
+      "minCenterHeight": -0.0001987665891647339,
+      "tallNarrowComponents": 0,
+      "finite": true,
+      "geometryRestored": true
+    }
+  ],
+  "face_clearance": [
+    {
+      "seed": 42,
+      "faces": 96,
+      "contacts": 0,
+      "maxPenetration": 0,
+      "settled": true,
+      "lateDisplacement": 0
+    },
+    {
+      "seed": 4131,
+      "faces": 96,
+      "contacts": 2,
+      "maxPenetration": 0.00037267233710736036,
+      "settled": true,
+      "lateDisplacement": 0
+    }
+  ],
+  "profile": {
+    "engine": "Jolt JS 1.1.0",
+    "workerThreads": 3,
+    "mode": "baseline",
+    "seed": 42,
+    "initMs": 18.65770899999984,
+    "rigidBodies": 1234,
+    "flexibleParts": 41,
+    "particles": 309,
+    "phases": [
+      {
+        "second": 1,
+        "meanMs": 12.995043766666656,
+        "p95Ms": 16.20545899999979,
+        "maxMs": 37.665666999999985
+      },
+      {
+        "second": 2,
+        "meanMs": 10.983976416666678,
+        "p95Ms": 13.244833000000199,
+        "maxMs": 13.417249999999967
+      },
+      {
+        "second": 3,
+        "meanMs": 13.105615866666646,
+        "p95Ms": 14.194375000000036,
+        "maxMs": 14.885957999999846
+      },
+      {
+        "second": 4,
+        "meanMs": 12.785678483333323,
+        "p95Ms": 13.995292000000063,
+        "maxMs": 14.436791999999969
+      },
+      {
+        "second": 5,
+        "meanMs": 13.178077000000053,
+        "p95Ms": 15.080999999999221,
+        "maxMs": 19.06212500000038
+      },
+      {
+        "second": 6,
+        "meanMs": 14.213497166666547,
+        "p95Ms": 20.04241599999932,
+        "maxMs": 45.05000000000018
+      },
+      {
+        "second": 7,
+        "meanMs": 13.099866583333307,
+        "p95Ms": 14.906292000000576,
+        "maxMs": 16.168290999999954
+      },
+      {
+        "second": 8,
+        "meanMs": 12.727998600000001,
+        "p95Ms": 13.551916000000347,
+        "maxMs": 13.893458000000464
+      },
+      {
+        "second": 9,
+        "meanMs": 12.386088183333293,
+        "p95Ms": 13.113624999999956,
+        "maxMs": 14.1659580000005
+      },
+      {
+        "second": 10,
+        "meanMs": 14.578762549999949,
+        "p95Ms": 30.472000000000662,
+        "maxMs": 273.8612919999996
+      },
+      {
+        "second": 11,
+        "meanMs": 0.561846500000047,
+        "p95Ms": 0.8496670000004087,
+        "maxMs": 0.9775420000005397
+      },
+      {
+        "second": 12,
+        "meanMs": 0.5454514000001837,
+        "p95Ms": 0.792250000000422,
+        "maxMs": 0.8734170000006998
+      }
+    ],
+    "active": false,
+    "awake": []
+  },
+  "browser_full_drop": {
+    "seed": 42,
+    "sim_seconds": 10.14,
+    "wall_seconds": 10.14,
+    "render_fps": 120,
+    "awake": 0
+  },
+  "browser_partial_drop": {
+    "seed": 42,
+    "progress": 0.35,
+    "sim_seconds": 14.89,
+    "wall_seconds": 17.83,
+    "render_fps": 120,
+    "awake": 0
+  },
+  "paired_previous_partial_drop": {
+    "seed": 42,
+    "progress": 0.35,
+    "sim_seconds": 11.03,
+    "wall_seconds": 11.3,
+    "render_fps": 120
+  },
+  "limitations": "Face sweeps use mean translation, not exact continuously deforming triangles. Textile force feedback, self-contact and bending remain omitted. Face collision work increases dense partial-drop physics cost; rendering remains independent. The accepted GLB is unchanged."
+}

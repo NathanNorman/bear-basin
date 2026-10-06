@@ -12,6 +12,8 @@ export class Deformable {
     this.inverseMass=descriptor.points.length/descriptor.mass;
     this.drag=descriptor.surface?1.8:.8;
     this.compliance=descriptor.surface?2e-6:1e-7;
+    this.faces=[];
+    for(let i=0;i<(descriptor.surface?.length||0);i+=3)this.faces.push(descriptor.surface.slice(i,i+3));
     this.edges=(descriptor.edges||descriptor.points.slice(1).map((_,i)=>[i,i+1])).map(([a,b])=> {
       const i=a*3,j=b*3,p=this.positions;
       return {i,j,length:Math.hypot(p[j]-p[i],p[j+1]-p[i+1],p[j+2]-p[i+2]),lambda:0};
@@ -46,6 +48,38 @@ export class Deformable {
     }
     if(p[i+1]<r){p[i+1]=r;n[i]=0;n[i+1]=1;n[i+2]=0;}
   }
+  surfaceContacts(world,swept=false){
+    const p=this.positions,n=this.normals;
+    for(const face of this.faces){
+      const [a,b,c]=face.map(index=>this.particlePosition(index));
+      const u=[b.x-a.x,b.y-a.y,b.z-a.z],v=[c.x-a.x,c.y-a.y,c.z-a.z];
+      const dot=(a,b)=>a.reduce((sum,x,i)=>sum+x*b[i],0);
+      const uu=dot(u,u),uv=dot(u,v),vv=dot(v,v),denominator=uu*vv-uv*uv;
+      if(denominator<1e-14)continue;
+      const previous=swept?face.map(index=>{const i=index*3;return {x:this.previous[i],y:this.previous[i+1],z:this.previous[i+2]};}):null;
+      for(const contact of world.triangleContacts(a,b,c,this.radius,previous)){
+        if(contact.depth<=0)continue;
+        const q=[contact.point.x-a.x,contact.point.y-a.y,contact.point.z-a.z];
+        const bu=(vv*dot(q,u)-uv*dot(q,v))/denominator;
+        const bv=(uu*dot(q,v)-uv*dot(q,u))/denominator;
+        const weights=[1-bu-bv,bu,bv].map(w=>Math.max(0,Math.min(1,w)));
+        const total=weights.reduce((s,w)=>s+w,0);
+        if(total<1e-9)continue;
+        for(let j=0;j<3;j++)weights[j]/=total;
+        const squared=dot(weights,weights);
+        const normal=contact.normal;
+        // Account for earlier contacts on this face before applying another.
+        const moved=face.reduce((sum,index,j)=>sum+weights[j]*((p[index*3]-[a,b,c][j].x)*normal.x+(p[index*3+1]-[a,b,c][j].y)*normal.y+(p[index*3+2]-[a,b,c][j].z)*normal.z),0);
+        const depth=contact.depth-moved;
+        if(depth<=0)continue;
+        for(let j=0;j<3;j++){
+          const i=face[j]*3,correction=(depth+.0001)*weights[j]/squared;
+          p[i]+=normal.x*correction;p[i+1]+=normal.y*correction;p[i+2]+=normal.z*correction;
+          if(weights[j]>1e-5){n[i]=normal.x;n[i+1]=normal.y;n[i+2]=normal.z;}
+        }
+      }
+    }
+  }
   step(dt,world,rigidActive) {
     if(this.sleeping){
       if(!rigidActive)return;
@@ -54,6 +88,7 @@ export class Deformable {
           this.sleeping=false;this.quietTime=0;
         }
       }
+      if(this.sleeping&&this.faces.some(face=>world.triangleContacts(...face.map(index=>this.particlePosition(index)),this.radius).some(contact=>contact.moving))){this.sleeping=false;this.quietTime=0;}
       if(this.sleeping)return;
     }
     const p=this.positions,v=this.velocities,old=this.previous,n=this.normals;
@@ -68,6 +103,7 @@ export class Deformable {
       p[i]+=delta.x*t;p[i+1]+=delta.y*t;p[i+2]+=delta.z*t;
       if(hit&&t<1){n[i]=hit.normal1.x;n[i+1]=hit.normal1.y;n[i+2]=hit.normal1.z;}
     }
+    this.surfaceContacts(world,true);
     for(const edge of this.edges)edge.lambda=0;
     const alpha=this.compliance/(dt*dt),weight=this.inverseMass;
     for(let iteration=0;iteration<8;iteration++){
@@ -81,6 +117,7 @@ export class Deformable {
         p[i]-=x*change;p[i+1]-=y*change;p[i+2]-=z*change;
         p[j]+=x*change;p[j+1]+=y*change;p[j+2]+=z*change;
       }
+      if(iteration===7)this.surfaceContacts(world);
       for(let i=0;i<p.length;i+=3)this.contact(world,i);
     }
     let maxSpeed=0,contacts=0;

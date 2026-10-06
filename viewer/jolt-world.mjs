@@ -56,6 +56,11 @@ export class JoltWorld {
     this.contactSettings=own(new J.CollideShapeSettings());
     this.castCollector=own(new J.CastShapeClosestHitCollisionCollector());
     this.contactCollector=own(new J.CollideShapeAllHitCollisionCollector());
+    this.faceBounds=own(new J.AABox());
+    this.faceCandidates=own(new J.CollideShapeBodyCollectorJS());
+    this.faceCandidateBase=J.castObject(this.faceCandidates,J.CollideShapeBodyCollector);
+    this.faceCandidates.Reset=()=>{this.faceCandidateHit=false;};
+    this.faceCandidates.AddHit=()=>{this.faceCandidateHit=true;this.faceCandidateBase.ForceEarlyOut();};
     this.createBody({center:[0,-50,0],quaternion:[0,0,0,1],halfExtents:[100,50,100]},true);
   }
   createBody(d,fixed=false) {
@@ -131,6 +136,64 @@ export class JoltWorld {
       contacts.push({normal:this.normal(hit),depth:hit.mPenetrationDepth,moving:body?.IsActive()||false});
     }
     return contacts;
+  }
+  triangleContacts(a,b,c,radius,previous=null){
+    // A thin convex prism queries the whole fabric face, including its interior.
+    // Reject empty swept bounds before allocating a native convex hull.
+    this.faceBounds.SetEmpty();
+    for(const point of [a,b,c,...(previous||[])])for(const sign of [-1,1]){
+      this.direction.Set(point.x+sign*radius,point.y+sign*radius,point.z+sign*radius);
+      this.faceBounds.EncapsulateVec3(this.direction);
+    }
+    this.faceCandidates.Reset();this.faceCandidateBase.ResetEarlyOutFraction();
+    this.system.GetBroadPhaseQuery().CollideAABox(this.faceBounds,this.faceCandidates,this.broadFilter,this.objectFilter);
+    if(!this.faceCandidateHit)return [];
+    const u=[b.x-a.x,b.y-a.y,b.z-a.z],v=[c.x-a.x,c.y-a.y,c.z-a.z];
+    const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+    const length=Math.hypot(...n);
+    if(length<1e-8)return [];
+    const settings=new J.ConvexHullShapeSettings();
+    settings.mMaxConvexRadius=0;settings.mHullTolerance=.000001;
+    for(const p of [[0,0,0],u,v])for(const sign of [-1,1]){
+      const vertex=new J.Vec3(...p.map((x,i)=>x+sign*n[i]*radius/length));
+      settings.mPoints.push_back(vertex);J.destroy(vertex);
+    }
+    const result=settings.Create();
+    if(result.HasError()){result.Clear();J.destroy(settings);return [];}
+    const shape=result.Get();shape.AddRef();result.Clear();J.destroy(settings);
+    const center=shape.GetCenterOfMass();
+    this.at({x:a.x+center.GetX(),y:a.y+center.GetY(),z:a.z+center.GetZ()});
+    const collector=this.contactCollector;collector.Reset();
+    try{
+      const contacts=[];
+      if(previous){
+        // Sweep the face's mean translation; final overlap checks also resolve
+        // deformation. This remains a coarse cloth solver, not self-contact.
+        const current=[a,b,c];
+        const delta={x:0,y:0,z:0};
+        for(let i=0;i<3;i++)for(const axis of ['x','y','z'])delta[axis]+=(current[i][axis]-previous[i][axis])/3;
+        if(Math.hypot(delta.x,delta.y,delta.z)>radius*.25){
+          this.at({x:a.x+center.GetX()-delta.x,y:a.y+center.GetY()-delta.y,z:a.z+center.GetZ()-delta.z});
+          this.direction.Set(delta.x,delta.y,delta.z);
+          const cast=new J.RShapeCast(shape,this.one,this.transform,this.direction),swept=this.castCollector;swept.Reset();
+          try{
+            this.system.GetNarrowPhaseQuery().CastShape(cast,this.castSettings,this.zero,swept,this.broadFilter,this.objectFilter,this.bodyFilter,this.shapeFilter);
+            if(swept.HadHit()){
+              const hit=swept.mHit,normal=this.normal(hit);
+              const depth=-(delta.x*normal.x+delta.y*normal.y+delta.z*normal.z)*(1-Math.max(0,hit.mFraction));
+              if(depth>0)contacts.push({normal,depth,point:vector(hit.mContactPointOn1)});
+            }
+          }finally{J.destroy(cast);}
+          this.at({x:a.x+center.GetX(),y:a.y+center.GetY(),z:a.z+center.GetZ()});
+        }
+      }
+      this.system.GetNarrowPhaseQuery().CollideShape(shape,this.one,this.transform,this.contactSettings,this.zero,collector,this.broadFilter,this.objectFilter,this.bodyFilter,this.shapeFilter);
+      for(let i=0;i<collector.mHits.size();i++){
+        const hit=collector.mHits.at(i),body=this.byId.get(hit.mBodyID2.GetIndexAndSequenceNumber());
+        contacts.push({normal:this.normal(hit),depth:hit.mPenetrationDepth,point:vector(hit.mContactPointOn1),moving:body?.IsActive()||false});
+      }
+      return contacts;
+    }finally{shape.Release();}
   }
   free(){
     if(this.disposed)return;this.disposed=true;
