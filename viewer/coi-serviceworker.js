@@ -33,13 +33,15 @@ if (typeof window === 'undefined') {
             })
             : r;
         event.respondWith(
-            fetch(request)
+            fetch(request, { cache: "no-cache" })
                 .then((response) => {
                     if (response.status === 0) {
                         return response;
                     }
 
                     const newHeaders = new Headers(response.headers);
+                    // Always revalidate deployed assets and do not retain old modules.
+                    newHeaders.set("Cache-Control", "no-store");
                     newHeaders.set("Cross-Origin-Embedder-Policy",
                         coepCredentialless ? "credentialless" : "require-corp"
                     );

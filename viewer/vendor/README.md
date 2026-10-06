@@ -20,4 +20,4 @@ Rapier 0.21.0 and `rapier.LICENSE` remain from the preserved historical implemen
 
 ## GitHub Pages isolation
 
-`../coi-serviceworker.js` is unmodified coi-serviceworker v0.1.7 from gzuidhof/coi-serviceworker commit `7b1d2a092d0d2dd2b7270b6f12f13605de26f214`. MIT license: `coi-serviceworker.LICENSE`. It supplies COOP/COEP on static hosting and scopes itself to the viewer directory.
+`../coi-serviceworker.js` is coi-serviceworker v0.1.7 from gzuidhof/coi-serviceworker commit `7b1d2a092d0d2dd2b7270b6f12f13605de26f214`. MIT license: `coi-serviceworker.LICENSE`. It supplies COOP/COEP on static hosting and scopes itself to the viewer directory. Local changes: asset fetches use `cache: "no-cache"` and returned responses carry `Cache-Control: no-store`, preventing old viewer modules from surviving a deployment reload.
