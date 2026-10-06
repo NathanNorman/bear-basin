@@ -3,6 +3,8 @@
 Status: proposed implementation; no simulation changes made by this specification.
 Inspected against the local model and viewer on 2026-10-05.
 
+For the longer-term goal of an 80 lb child swinging for 1,000 hours, see [the realistic physics and wear plan](realistic-physics-and-wear-plan.md). This specification remains the connected interactive foundation; its ideal rigid connections alone cannot calculate internal joint movement or long-term wear.
+
 ## Intended result
 
 Gravity should act on an assembled object, with its connections intact. At 0% disassembly, timber, brackets, and installed hardware stay attached; swing seats hang from their supports. At partial disassembly, released parts fall while remaining connected sections move together. At 100%, all deliberately released pieces can fall independently. Contacts, friction, inertia, and support determine the resting pile.
