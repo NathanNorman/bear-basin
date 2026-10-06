@@ -32,7 +32,6 @@ export function startViewer(state) {
   let pieces = [];
   let progress = 0;
   let animation = null;
-  let fieldPoints = null;
   let fall = null;
   let releaseAt = null;
   let lastPhysicsFrame = null;
@@ -67,7 +66,6 @@ export function startViewer(state) {
           get('gravity').disabled = true;
           prepareFall();
           lastPhysicsFrame = now;
-          fieldPoints.visible = false;
           ground.visible = true;
           ground.material.opacity = 1;
           grid.visible = true;
@@ -148,20 +146,6 @@ export function startViewer(state) {
       piece.object.position.copy(piece.object.parent.worldToLocal(displaced));
       piece.object.quaternion.copy(piece.rotation).multiply(
         new THREE.Quaternion().setFromEuler(new THREE.Euler(...pose.turn)));
-    }
-    if (fieldPoints) {
-      fieldPoints.visible = progress > 0;
-      fieldPoints.material.opacity = smooth(progress) * .7;
-      const matrix = new THREE.Matrix4();
-      let index = 0;
-      for (const piece of pieces) {
-        if (piece.object.userData.grp !== 'Fasteners') continue;
-        const offset = samplePath(piece.path, progress).offset;
-        matrix.makeTranslation(...piece.center.map((v, i) => v + offset[i]));
-        if (!isVisible(piece.object)) matrix.makeScale(0, 0, 0);
-        fieldPoints.setMatrixAt(index++, matrix);
-      }
-      fieldPoints.instanceMatrix.needsUpdate = true;
     }
     scene.background.set(0xc9ced6).lerp(new THREE.Color(0x081b2b), smooth(progress));
     ground.material.opacity = 1 - smooth(progress);
@@ -340,12 +324,6 @@ export function startViewer(state) {
         path: partPath(new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3()).toArray(),
           object.userData.grp, object.userData.part),
       }));
-      fieldPoints = new THREE.InstancedMesh(new THREE.SphereGeometry(.018, 6, 4),
-        new THREE.MeshBasicMaterial({ color: 0x65e7ff, transparent: true, opacity: 0 }),
-        pieces.filter((piece) => piece.object.userData.grp === 'Fasteners').length);
-      fieldPoints.frustumCulled = false;
-      fieldPoints.visible = false;
-      scene.add(fieldPoints);
       hardwareInstances = new HardwareInstances(pickables, scene);
       for (const id of ['explode', 'assemble', 'disassemble', 'gravity']) get(id).disabled = false;
       renderGroups();

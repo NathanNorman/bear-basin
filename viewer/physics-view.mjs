@@ -3,6 +3,7 @@ import { FallSimulation } from './fall-physics.mjs';
 import {BakedSimulation,trajectoryKey} from './baked-simulation.mjs';
 import { WorkerSimulation } from './worker-simulation.mjs';
 import { ConvexHull } from './vendor/ConvexHull.mjs';
+import { mergeVertices } from './vendor/addons/utils/BufferGeometryUtils.js';
 
 function metadata(object, key) {
   for (let current = object; current; current = current.parent) {
@@ -63,6 +64,12 @@ export class PhysicsView {
           geometry = new THREE.BufferGeometry();
           geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
         }
+        // Shared vertices allow normals to blend across cloth triangles. The
+        // physical nodes and face contacts remain exactly the same.
+        const indexed = mergeVertices(geometry, 1e-5);
+        geometry.dispose();
+        geometry = indexed;
+        geometry.computeVertexNormals();
         object.geometry = geometry;
         const nodes = [], lookup = new Map(), edges = new Map();
         entry.nodeIndices = [];
@@ -73,15 +80,16 @@ export class PhysicsView {
           if (!lookup.has(key)) { lookup.set(key, nodes.length); nodes.push(p.toArray()); }
           entry.nodeIndices.push(lookup.get(key));
         }
-        for (let i = 0; i < entry.nodeIndices.length; i += 3) {
-          const [a,b,c] = entry.nodeIndices.slice(i, i + 3);
+        const surface = Array.from(geometry.index.array, vertex => entry.nodeIndices[vertex]);
+        for (let i = 0; i < surface.length; i += 3) {
+          const [a,b,c] = surface.slice(i, i + 3);
           for (const [u,v] of [[a,b],[b,c],[c,a]]) {
             if (u !== v) edges.set([u,v].sort((x,y) => x-y).join(','), [u,v]);
           }
         }
         descriptor.points = nodes;
         descriptor.edges = [...edges.values()];
-        descriptor.surface = entry.nodeIndices;
+        descriptor.surface = surface;
       } else if (metadata(object, 'kind') === 'rope') {
         // Tubular ropes are monotone along their longest local axis. Bin their
         // existing vertices to obtain a flexible chain without adding rigid boxes.
